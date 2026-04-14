@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Futsal Booking Premium</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+
+
+<style>
+body{background:#f5f7fa;font-family:sans-serif;margin:0;}
+.page{min-width:100vw;flex-shrink:0;padding:16px;}
+#app{display:flex;transition:.3s}
+
+.card{background:#fff;border-radius:18px;padding:14px;box-shadow:0 10px 25px rgba(0,0,0,.05);}
+.slot{padding:14px;border-radius:12px;text-align:center;cursor:pointer;transition:.2s}
+.green{background:#16a34a;color:#fff;}
+.red{background:#dc2626;color:#fff;}
+.dp{background:#fb7185;color:#fff;}
+.gray{background:#d1d5db;color:#fff;}
+
+.selected{
+  outline:2px solid #3b82f6;
+  transform:scale(1.12);
+  box-shadow:0 0 14px rgba(59,130,246,0.6);
+}
+
+.nav{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;box-shadow:0 -5px 20px rgba(0,0,0,.05)}
+.nav button{flex:1;padding:14px;font-weight:bold}
+
+/* POPUP PREMIUM */
+.popup{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.4);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  opacity:0;
+  pointer-events:none;
+  transition:.25s;
+}
+.popup.show{
+  opacity:1;
+  pointer-events:auto;
+}
+
+.popup-box{
+  transform:scale(.8);
+  transition:.25s;
+}
+.popup.show .popup-box{
+  transform:scale(1);
+}
+
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+#app {
+  display: block;
+}
+
+.page {
+  width: 100vw;
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+
+
+.page {
+  height: 100vh;
+  overflow-y: auto;
+  padding-bottom: 90px; /* penting */
+}
+
+
+
+.no-scroll {
+  height: 100vh;
+  overflow: hidden !important;
+}
+
+.page {
+  display: none;
+}
+
+.active-page {
+  display: block;
+}
+
+</style>
+
+
+
+</head>
+
+<body>
+
+<div id="app">
+
+<!-- BOOKING -->
+
+  <div id="pageBooking" class="page">
+
+<h2 class="font-bold text-lg mb-2">⚽ Booking</h2>
+
+<div class="card mb-2">
+<input id="nama" placeholder="Nama" class="w-full p-2 border rounded mb-2">
+<input id="tanggal" type="date" class="w-full p-2 border rounded">
+</div>
+
+<div class="card mb-2">
+<div id="jamGrid" class="grid grid-cols-3 gap-2"></div>
+</div>
+
+<div class="card flex justify-between mb-2">
+<div id="total">Rp0</div>
+<button onclick="clearSelect()" class="text-red-500">Reset</button>
+</div>
+
+<button onclick="openPopup()" class="w-full bg-blue-600 text-white p-3 rounded">
+Bayar Sekarang
+</button>
+
+</div>
+
+<!-- RIWAYAT -->
+ <div id="pageSaya" class="page no-scroll">
+
+<h2 class="font-bold mb-2">📋 Booking Saya</h2>
+
+<div class="card mb-2">
+<input id="searchNama" placeholder="🔍 Cari nama..." class="w-full p-2 border rounded mb-2">
+<input type="date" id="filterTanggal" class="w-full p-2 border rounded mb-2">
+
+<div class="flex gap-2">
+<button onclick="setStatusFilter('all')" class="flex-1 p-2 bg-blue-600 text-white rounded">Semua</button>
+<button onclick="setStatusFilter('lunas')" class="flex-1 p-2 bg-gray-200 rounded">Lunas</button>
+<button onclick="setStatusFilter('dp')" class="flex-1 p-2 bg-gray-200 rounded">DP</button>
+</div>
+</div>
+
+<div class="card">
+<div id="myBooking"></div>
+</div>
+
+</div>
+
+</div>
+
+<!-- NAV -->
+<div class="nav">
+<button onclick="goPage(0)">🏠 Booking</button>
+<button onclick="goPage(1)">📋 Saya</button>
+</div>
+
+<!-- POPUP BAYAR -->
+<div id="popupBayar" class="popup">
+  <div class="card w-80 text-center popup-box">
+
+    <h3 class="font-bold text-lg mb-2">Pilih Pembayaran</h3>
+
+    <div id="popupTotal" class="mb-3 text-blue-600 font-semibold"></div>
+
+    <button onclick="prosesBayar('dp')"
+      class="w-full bg-red-500 text-white p-3 rounded mb-2">
+      💰 Bayar DP (50%)
+    </button>
+
+    <button onclick="prosesBayar('paid')"
+      class="w-full bg-green-600 text-white p-3 rounded mb-2">
+      ✅ Bayar Lunas
+    </button>
+
+    <button onclick="closePopupBayar()"
+      class="w-full bg-gray-200 p-2 rounded">
+      Batal
+    </button>
+
+  </div>
+</div>
+
+<!-- POPUP AUTH -->
+<div id="authPopup" class="popup">
+<div class="card w-72 popup-box">
+<input id="authNama" placeholder="Masukkan nama" class="w-full p-2 border rounded mb-2">
+<button onclick="cekNama()" class="w-full bg-blue-600 text-white p-2 rounded">Lihat</button>
+<button onclick="closeAuth()" class="w-full bg-gray-200 p-2 mt-2 rounded">Batal</button>
+</div>
+</div>
+
+<!-- POPUP BUKTI -->
+<div id="bukti" class="popup">
+<div class="card w-72 popup-box">
+<div id="buktiContent"></div>
+<button onclick="closeBukti()" class="w-full bg-gray-200 p-2 mt-2 rounded">Tutup</button>
+</div>
+</div>
+
+<div id="lihatNamaPopup" class="popup">
+  <div class="card w-72 popup-box">
+    <input id="cekNamaSlot" placeholder="Masukkan nama" class="w-full p-2 border rounded mb-2">
+    <button onclick="cekNamaSlot()" class="w-full bg-blue-600 text-white p-2 rounded">Lihat</button>
+    <button onclick="closeLihatNama()" class="w-full bg-gray-200 p-2 mt-2 rounded">Batal</button>
+  </div>
+</div>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", () => {
+
+const supabase = window.supabase.createClient(
+  "https://zfznefbhgdccrpvlkyso.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpmem5lZmJoZ2RjY3JwdmxreXNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3ODYzMTEsImV4cCI6MjA5MTM2MjMxMX0.1r_EyUu58Xn9cgjpf3vE6k0h7P_mABOnwe_LT2-9Bek"
+);
+
+// ================= STATE =================
+let selected = new Set();
+let dbMap = {};
+let selectedSlot = null;
+
+const harga = 100000;
+
+const nama = document.getElementById("nama");
+const tanggal = document.getElementById("tanggal");
+const jamGrid = document.getElementById("jamGrid");
+const total = document.getElementById("total");
+const myBookingUI = document.getElementById("myBooking");
+
+const today = new Date().toISOString().split('T')[0];
+tanggal.value = today;
+tanggal.min = today;
+
+// ================= LOAD =================
+async function loadData(){
+
+  const { data, error } = await supabase
+    .from("booking")
+    .select("id,jam,status,nama,tanggal")
+    .eq("tanggal", tanggal.value);
+
+  if(error){
+    console.error(error);
+    return;
+  }
+
+  dbMap = {};
+  data.forEach(d => dbMap[d.jam] = d);
+
+  render();
+}
+
+// ================= RENDER =================
+function render(){
+
+  jamGrid.innerHTML = "";
+  let now = new Date().getHours();
+
+  for(let i=7;i<=24;i++){
+
+    let jam = (i<10?'0'+i:i)+":00";
+    let item = dbMap[jam];
+    let isPast = (tanggal.value===today && i<=now);
+
+    let btn = document.createElement("div");
+    btn.dataset.jam = jam;
+
+    btn.className = "slot " + (
+      item?.status==="paid" ? "red" :
+      item?.status==="dp" ? "dp" :
+      isPast ? "gray" : "green"
+    );
+
+    if(selected.has(jam)){
+      btn.classList.add("selected");
+    }
+
+    btn.innerText = jam;
+
+    btn.onclick = async function(){
+
+      let jam = this.dataset.jam;
+      let item = dbMap[jam];
+
+      let jamNum = parseInt(jam);
+      let now = new Date().getHours();
+
+      if(tanggal.value===today && jamNum<=now){
+        alert("Jam lewat");
+        return;
+      }
+
+      // 🔴 SLOT TERISI → CEK NAMA
+      if(item?.status==="paid" || item?.status==="dp"){
+        selectedSlot = item;
+        document.getElementById("lihatNamaPopup").classList.add("show");
+        return;
+      }
+
+      // SELECT
+      if(selected.has(jam)){
+        selected.delete(jam);
+        this.classList.remove("selected");
+      }else{
+        selected.add(jam);
+        this.classList.add("selected");
+      }
+
+      updateTotal();
+    }
+
+    jamGrid.appendChild(btn);
+  }
+
+
+
+  renderMyBooking();
+}
+
+// ================= TOTAL =================
+function updateTotal(){
+  total.innerText = "Rp" + (selected.size * harga).toLocaleString();
+}
+
+// ================= RESET =================
+window.clearSelect = function(){
+  selected.clear();
+  document.querySelectorAll(".selected").forEach(el=>{
+    el.classList.remove("selected");
+  });
+  updateTotal();
+}
+
+// ================= POPUP =================
+window.openPopup = function(){
+  if(!nama.value || selected.size===0){
+    alert("Isi nama & pilih jam");
+    return;
+  }
+
+  document.getElementById("popupTotal").innerText =
+    "Total: Rp" + (selected.size * harga).toLocaleString();
+
+  document.getElementById("popupBayar").classList.add("show");
+}
+
+window.closePopupBayar = function(){
+  document.getElementById("popupBayar").classList.remove("show");
+}
+
+// ================= BAYAR =================
+window.prosesBayar = async function(status){
+
+  const payload = Array.from(selected).map(j => ({
+    nama: nama.value,
+    tanggal: tanggal.value,
+    jam: j,
+    status: status
+  }));
+
+  const { error } = await supabase
+    .from("booking")
+    .insert(payload);
+
+  if(error){
+    console.error(error);
+    alert("Gagal booking: " + error.message);
+    return;
+  }
+
+  // simpan ke riwayat
+  let my = JSON.parse(localStorage.getItem("myBooking") || "[]");
+  my.push({
+    nama: nama.value,
+    tanggal: tanggal.value,
+    jam: Array.from(selected),
+    status: status
+  });
+  localStorage.setItem("myBooking", JSON.stringify(my));
+
+  selected.clear();
+  updateTotal();
+
+  closePopupBayar();
+  loadData();
+}
+
+// ================= LIHAT NAMA =================
+window.cekNamaSlot = function(){
+
+  let input = document.getElementById("cekNamaSlot").value.toLowerCase();
+
+  if(input !== selectedSlot.nama.toLowerCase()){
+    alert("Nama tidak cocok");
+    return;
+  }
+
+  alert("Dibooking oleh: " + selectedSlot.nama);
+
+  closeLihatNama();
+}
+
+window.closeLihatNama = function(){
+  document.getElementById("lihatNamaPopup").classList.remove("show");
+}
+
+function sensorNama(nama){
+  try{
+    if(!nama) return "-";
+    return nama[0].toUpperCase() + "****";
+  }catch{
+    return "-";
+  }
+}
+
+// ================= RIWAYAT =================
+function renderMyBooking(){
+
+  let my = JSON.parse(localStorage.getItem("myBooking") || "[]");
+
+  const search = document.getElementById("searchNama")?.value.toLowerCase() || "";
+  const filterTgl = document.getElementById("filterTanggal")?.value || "";
+
+  if(!myBookingUI) return;
+
+  myBookingUI.innerHTML = my
+    .map((b,i)=>({ ...b, index:i })) // 🔥 simpan index asli
+    .filter(b => {
+      let cocokNama = (b.nama || "").toLowerCase().includes(search);
+      let cocokTanggal = filterTgl ? b.tanggal === filterTgl : true;
+      return cocokNama && cocokTanggal;
+    })
+    .map(b=>{
+
+      let btn = "";
+
+      if(b.status==="dp"){
+        btn = `<button onclick="lunasiBooking(${b.index})" class="text-green-600">Lunasi</button>`;
+      }
+
+      return `
+      <div class="flex justify-between border-b py-2">
+        <div>
+          ${sensorNama(b.nama)}<br>
+          <span class="text-xs">${b.tanggal || "-"}</span><br>
+          <span class="text-xs">${(b.jam || []).join(", ")}</span>
+        </div>
+        ${btn}
+      </div>
+      `;
+    }).join("");
+}
+
+// ================= LUNASI =================
+window.lunasiBooking = async function(i){
+
+  let my = JSON.parse(localStorage.getItem("myBooking") || "[]");
+  let data = my[i];
+
+  for(let j of data.jam){
+    await supabase
+      .from("booking")
+      .update({status:"paid"})
+      .eq("tanggal", data.tanggal)
+      .eq("jam", j)
+      .eq("nama", data.nama);
+  }
+
+  my[i].status = "paid";
+  localStorage.setItem("myBooking", JSON.stringify(my));
+
+  loadData();
+  renderMyBooking();
+
+  alert("Berhasil dilunasi");
+}
+
+// ================= INIT =================
+tanggal.onchange = loadData;
+loadData();
+
+document.getElementById("searchNama").addEventListener("input", renderMyBooking);
+document.getElementById("filterTanggal").addEventListener("change", renderMyBooking);
+
+// ================= NAV CLICK =================
+window.goPage = function(i){
+
+  document.getElementById("pageBooking").classList.remove("active-page");
+  document.getElementById("pageSaya").classList.remove("active-page");
+
+  if(i === 0){
+    document.getElementById("pageBooking").classList.add("active-page");
+  }else{
+    document.getElementById("pageSaya").classList.add("active-page");
+  }
+
+}
+
+// default halaman pertama
+goPage(0);
+
+});
+
+</script>
+
+
+</body>
+</html>
